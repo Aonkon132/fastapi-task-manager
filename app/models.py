@@ -1,5 +1,7 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
+from pydantic import field_validator
+import re
 
 # This class defines the Database Table structure using SQLModel
 class Task(SQLModel, table=True):
@@ -14,3 +16,11 @@ class Task(SQLModel, table=True):
     
     # Boolean field to track status, defaults to False (Not Completed)
     is_completed: bool = Field(default=False)
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value):
+        # Allows only alphanumeric characters (letters and numbers) and spaces
+        if not re.match(r"^[a-zA-Z0-9 ]+$", value):
+            raise ValueError("Only characters and numbers are allowed in title")
+        return value

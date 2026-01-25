@@ -1,8 +1,124 @@
-body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-.input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-input { flex: 1; padding: 10px; }
-ul { list-style: none; padding: 0; }
-li { background: #f4f4f4; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-button { padding: 5px 10px; cursor: pointer; }
-.delete-btn { background: red; color: white; border: none; margin-left: 5px;}
-.edit-btn { background: orange; color: white; border: none; }
+/* General page styling */
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    padding: 20px; 
+    max-width: 600px; 
+    margin: auto; 
+    background-color: #f9f9f9;
+}
+
+/* Container for input field and add button */
+.input-group { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 20px; 
+}
+
+/* Task input field styling */
+input { 
+    flex: 1; 
+    padding: 12px; 
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+}
+
+/* Unordered list styling */
+ul { 
+    list-style: none; 
+    padding: 0; 
+}
+
+/* Individual task row styling */
+li { 
+    background: white; 
+    margin: 8px 0; 
+    padding: 12px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Styling for serial numbers before the title */
+.task-number {
+    color: #777;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    margin-right: 10px;
+}
+
+/* Status badge for pending tasks */
+.status-pending {
+    font-size: 11px;
+    color: #856404;
+    background-color: #fff3cd;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* Status badge for completed tasks */
+.status-done {
+    font-size: 11px;
+    color: #155724;
+    background-color: #d4edda;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* Strike-through effect for completed tasks */
+.completed {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Common button styling */
+button { 
+    padding: 6px 12px; 
+    cursor: pointer; 
+    border-radius: 4px;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+/* Delete button styling */
+.delete-btn { 
+    background: #ff4d4d; 
+    color: white; 
+    border: none; 
+    margin-left: 5px;
+}
+
+.delete-btn:hover {
+    background: #cc0000;
+}
+
+/* Edit button styling */
+.edit-btn { 
+    background: #ffa500; 
+    color: white; 
+    border: none; 
+}
+
+.edit-btn:hover {
+    background: #e69500;
+}
+
+/* Main 'Add Task' button styling */
+#addTaskBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    font-weight: bold;
+}
+
+#addTaskBtn:hover {
+    background-color: #0056b3;
+}
