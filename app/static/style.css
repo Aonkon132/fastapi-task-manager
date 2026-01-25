@@ -1,0 +1,8 @@
+body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+.input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+input { flex: 1; padding: 10px; }
+ul { list-style: none; padding: 0; }
+li { background: #f4f4f4; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+button { padding: 5px 10px; cursor: pointer; }
+.delete-btn { background: red; color: white; border: none; margin-left: 5px;}
+.edit-btn { background: orange; color: white; border: none; }
