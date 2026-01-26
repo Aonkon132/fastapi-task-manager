@@ -46,18 +46,6 @@
 
 ---
 
-## 🎬 Demo
-
-### Light Mode Dashboard
-![Light Mode](docs/screenshots/light_mode.png)
-
-### Dark Mode Dashboard
-![Dark Mode](docs/screenshots/dark_mode.png)
-
-### Task Management
-![Task Management](docs/screenshots/tasks.png)
-
----
 
 ## 🚀 Quick Start
 
@@ -186,7 +174,7 @@ The application has been tested against:
 - ✅ Authentication bypass attempts (blocked)
 - ✅ Account enumeration (prevented)
 
-See [docs/security_audit.md](docs/security_audit.md) for detailed security reports.
+
 
 ---
 
@@ -400,7 +388,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Your Name**
+**Aonkon Mallick**
 - GitHub: [@Aonkon132](https://github.com/Aonkon132)
 - Email: aonkonmallcik132@gmail.com
 
