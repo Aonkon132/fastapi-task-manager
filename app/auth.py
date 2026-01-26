@@ -19,18 +19,20 @@ def register_user(user_input: UserCreate, session: Session = Depends(get_session
     Handles new user registration using a Schema (UserCreate).
     """
     
-    # 1. Check if the user already exists in the database
-    # Using user_input.username and user_input.email ensures valid data lookup
-    statement = select(User).where(
-        (User.username == user_input.username) | (User.email == user_input.email)
-    )
-    existing_user = session.exec(statement).first()
-    
-    if existing_user:
-        # Generic message to prevent account enumeration
+    # 1. Check if the username already exists
+    statement_username = select(User).where(User.username == user_input.username)
+    if session.exec(statement_username).first():
         raise HTTPException(
             status_code=400, 
-            detail="Registration failed. Please try different credentials."
+            detail="This username is already taken. Please choose another."
+        )
+
+    # 2. Check if the email already exists
+    statement_email = select(User).where(User.email == user_input.email)
+    if session.exec(statement_email).first():
+        raise HTTPException(
+            status_code=400, 
+            detail="This email address is already registered."
         )
 
     # 2. Convert input data into the database model (User)

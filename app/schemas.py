@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -59,4 +59,14 @@ class UserRead(BaseModel):
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
-    password: str # Plain text password from user, will be hashed in backend
+    password: str 
+
+    @field_validator("password")
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isdigit() for char in v):
+            raise ValueError("Password must contain at least one number")
+        if not any(char.isalpha() for char in v):
+            raise ValueError("Password must contain at least one letter")
+        return v

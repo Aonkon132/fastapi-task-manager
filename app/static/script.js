@@ -102,8 +102,24 @@ async function handleAuthAction() {
     } catch (error) {
         console.error("Authentication Error:", error);
     } finally {
-        btn.innerHTML = originalText;
         btn.disabled = false;
+        btn.innerHTML = isLoginMode ? "Sign In" : "Create Account";
+    }
+}
+
+/**
+ * Toggle Password Visibility
+ */
+function togglePassword() {
+    const passwordInput = document.getElementById("password");
+    const icon = document.querySelector(".password-toggle .eye-icon");
+
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        icon.textContent = "🙈"; // Hide icon
+    } else {
+        passwordInput.type = "password";
+        icon.textContent = "👁️"; // Show icon
     }
 }
 
@@ -111,13 +127,43 @@ async function handleAuthAction() {
  * User Registration
  */
 async function register() {
-    const username = document.getElementById("username").value;
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const usernameInput = document.getElementById("username");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
 
-    if (!username || !email || !password) {
-        return alert("All fields are required!");
+    const username = usernameInput.value;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    // Reset errors
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.querySelectorAll('.input-wrapper').forEach(el => el.classList.remove('error'));
+
+    let hasError = false;
+
+    // Client-side validation
+    if (!username) {
+        showError('username', 'Username is required');
+        hasError = true;
     }
+    // Password check
+    if (!password) {
+        showError('password', 'Password is required');
+        hasError = true;
+    } else {
+        if (password.length < 8) {
+            showError('password', 'Password must be at least 8 characters');
+            hasError = true;
+        } else if (!/\d/.test(password)) {
+            showError('password', 'Password must contain a number');
+            hasError = true;
+        } else if (!/[a-zA-Z]/.test(password)) {
+            showError('password', 'Password must contain a letter');
+            hasError = true;
+        }
+    }
+
+    if (hasError) return;
 
     try {
         const response = await fetch(`${API_URL}/auth/register/`, {
@@ -126,24 +172,42 @@ async function register() {
             body: JSON.stringify({
                 username: username,
                 email: email,
-                hashed_password: password
+                password: password
             })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            alert("Registration Successful! Please Login.");
+            // Success
+            alert("Registration Successful! Please Login."); // Keeping success alert or changing to toast? 
+            // User requested "professional", but success alert is okay-ish. 
+            // Better: Switch to login and show success message there?
+            // Existing logic: alert then toggleAuthMode(true).
             toggleAuthMode(true);
+            // Optionally autofill login?
         } else {
+            // Handle Errors
             if (Array.isArray(data.detail)) {
-                const errorMessages = data.detail.map(err => {
+                data.detail.forEach(err => {
                     const field = err.loc[err.loc.length - 1];
-                    return `${field.toUpperCase()}: ${err.msg}`;
-                }).join("\\n");
-                alert("Validation Error:\\n" + errorMessages);
+                    // Map backend field names to IDs if necessary
+                    let targetField = field;
+                    if (field === 'hashed_password') targetField = 'password';
+
+                    showError(targetField, err.msg);
+                });
             } else {
-                alert(data.detail || "Registration failed. Please try again.");
+                // General error (e.g., "User already exists")
+                // Try to determine field or show generic
+                const errorMsg = data.detail.toLowerCase();
+                if (errorMsg.includes("username")) {
+                    showError('username', data.detail);
+                } else if (errorMsg.includes("mail")) {
+                    showError('email', data.detail);
+                } else {
+                    alert(data.detail || "Registration failed. Please try again.");
+                }
             }
         }
     } catch (err) {
@@ -152,14 +216,45 @@ async function register() {
     }
 }
 
+function showError(fieldId, message) {
+    const errorDiv = document.getElementById(`error-${fieldId}`);
+    const input = document.getElementById(fieldId);
+
+    if (errorDiv) {
+        errorDiv.textContent = message;
+    }
+    if (input) {
+        const wrapper = input.closest('.input-wrapper');
+        if (wrapper) wrapper.classList.add('error');
+    }
+}
+
 /**
  * User Login
  */
 async function login() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
 
-    if (!username || !password) return alert("Credentials required!");
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+
+    // Reset errors
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.querySelectorAll('.input-wrapper').forEach(el => el.classList.remove('error'));
+
+    let hasError = false;
+
+    if (!username) {
+        showError('username', 'Username is required');
+        hasError = true;
+    }
+    if (!password) {
+        showError('password', 'Password is required');
+        hasError = true;
+    }
+
+    if (hasError) return;
 
     const formData = new FormData();
     formData.append("username", username);
@@ -175,7 +270,13 @@ async function login() {
         localStorage.setItem("token", data.access_token);
         showTodoSection();
     } else {
-        alert("Login Failed! Please check your credentials.");
+        const data = await response.json();
+        // Show error under password field for 401
+        if (response.status === 401) {
+            showError('password', 'Incorrect username or password');
+        } else {
+            showError('password', data.detail || "Login failed");
+        }
     }
 }
 
