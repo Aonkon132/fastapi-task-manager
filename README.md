@@ -6,7 +6,6 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 **A beautiful, modern task management application with priority levels, categories, and dark mode support**
 
@@ -46,18 +45,6 @@
 
 ---
 
-## 🎬 Demo
-
-### Light Mode Dashboard
-![Light Mode](docs/screenshots/light_mode.png)
-
-### Dark Mode Dashboard
-![Dark Mode](docs/screenshots/dark_mode.png)
-
-### Task Management
-![Task Management](docs/screenshots/tasks.png)
-
----
 
 ## 🚀 Quick Start
 
@@ -187,7 +174,7 @@ The application has been tested against:
 - ✅ Authentication bypass attempts (blocked)
 - ✅ Account enumeration (prevented)
 
-See [docs/security_audit.md](docs/security_audit.md) for detailed security reports.
+
 
 ---
 
@@ -390,12 +377,6 @@ Contributions are welcome! Please follow these steps:
 - [ ] Team collaboration features
 - [ ] Mobile apps (React Native)
 - [ ] Integration with calendar apps
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
