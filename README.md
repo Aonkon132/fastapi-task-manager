@@ -71,8 +71,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/taskflow.git
-   cd taskflow
+   git clone https://github.com/Aonkon132/fastapi-task-manager.git
    ```
 
 2. **Create virtual environment**
@@ -402,8 +401,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Email: your.email@example.com
+- GitHub: [@Aonkon132](https://github.com/Aonkon132)
+- Email: aonkonmallcik132@gmail.com
 
 ---
 
@@ -419,9 +418,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 If you have any questions or issues, please:
-1. Check existing [Issues](https://github.com/yourusername/taskflow/issues)
+1. Check existing [Issues](https://github.com/Aonkon132/taskflow/issues)
 2. Create a new issue with detailed description
-3. Contact via email: your.email@example.com
+3. Contact via email: aonkonmallick132@gmail.com
 
 ---
 
