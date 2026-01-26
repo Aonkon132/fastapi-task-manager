@@ -1,157 +1,500 @@
-const API_URL = "/tasks"; // Base API URL for task operations
+/**
+ * TaskFlow - Modern Task Manager
+ * Enhanced JavaScript with Dark Mode, Statistics, Filters, and Priority Management
+ */
 
-// Wait for the DOM to be fully loaded before fetching tasks
-document.addEventListener("DOMContentLoaded", loadTasks);
+const API_URL = "http://127.0.0.1:8000";
+let isLoginMode = true;
+let allTasks = [];
+let currentFilter = 'all';
 
 /**
- * 1. Fetch and display all tasks from the database (READ)
- * Dynamically renders task list with serial numbers, titles, and status badges.
+ * Initialize Application
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+        showTodoSection();
+    }
+
+    // Load theme preference
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    updateThemeIcon();
+});
+
+/**
+ * Dark Mode Toggle
+ */
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute("data-theme");
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+
+    html.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    updateThemeIcon();
+}
+
+function updateThemeIcon() {
+    const themeIcon = document.querySelector(".theme-icon");
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    if (themeIcon) {
+        themeIcon.textContent = currentTheme === "light" ? "🌙" : "☀️";
+    }
+}
+
+/**
+ * Authentication UI Toggle
+ */
+function toggleAuthMode(forceMode = null) {
+    if (forceMode !== null) {
+        isLoginMode = forceMode;
+    } else {
+        isLoginMode = !isLoginMode;
+    }
+
+    const title = document.getElementById("authTitle");
+    const subtitle = document.getElementById("authSubtitle");
+    const emailWrapper = document.getElementById("emailWrapper");
+    const btn = document.getElementById("authBtn");
+    const toggleText = document.getElementById("toggleText");
+    const toggleLink = document.getElementById("toggleLink");
+
+    // Clear inputs
+    document.getElementById("username").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("password").value = "";
+
+    if (isLoginMode) {
+        title.innerText = "Welcome to TaskFlow";
+        subtitle.innerText = "Sign in to manage your tasks efficiently";
+        emailWrapper.style.display = "none";
+        btn.innerHTML = "Sign In";
+        toggleText.innerText = "Don't have an account?";
+        toggleLink.innerText = "Create one";
+    } else {
+        title.innerText = "Create Your Account";
+        subtitle.innerText = "Join TaskFlow to boost your productivity";
+        emailWrapper.style.display = "block";
+        btn.innerHTML = "Create Account";
+        toggleText.innerText = "Already have an account?";
+        toggleLink.innerText = "Sign in";
+    }
+}
+
+/**
+ * Master Auth Handler
+ */
+async function handleAuthAction() {
+    const btn = document.getElementById("authBtn");
+    const originalText = btn.innerHTML;
+
+    btn.innerHTML = "Processing...";
+    btn.disabled = true;
+
+    try {
+        if (isLoginMode) {
+            await login();
+        } else {
+            await register();
+        }
+    } catch (error) {
+        console.error("Authentication Error:", error);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+/**
+ * User Registration
+ */
+async function register() {
+    const username = document.getElementById("username").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!username || !email || !password) {
+        return alert("All fields are required!");
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/auth/register/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                hashed_password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert("Registration Successful! Please Login.");
+            toggleAuthMode(true);
+        } else {
+            if (Array.isArray(data.detail)) {
+                const errorMessages = data.detail.map(err => {
+                    const field = err.loc[err.loc.length - 1];
+                    return `${field.toUpperCase()}: ${err.msg}`;
+                }).join("\\n");
+                alert("Validation Error:\\n" + errorMessages);
+            } else {
+                alert(data.detail || "Registration failed. Please try again.");
+            }
+        }
+    } catch (err) {
+        console.error("Registration Error:", err);
+        alert("Server connection failed. Is your backend running?");
+    }
+}
+
+/**
+ * User Login
+ */
+async function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) return alert("Credentials required!");
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+
+    const response = await fetch(`${API_URL}/auth/token`, {
+        method: "POST",
+        body: formData
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.access_token);
+        showTodoSection();
+    } else {
+        alert("Login Failed! Please check your credentials.");
+    }
+}
+
+/**
+ * Load Statistics
+ */
+async function loadStatistics() {
+    const token = localStorage.getItem("token");
+    try {
+        const response = await fetch(`${API_URL}/tasks/stats`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.status === 401) return logout();
+
+        const stats = await response.json();
+
+        document.getElementById("statTotal").textContent = stats.total;
+        document.getElementById("statCompleted").textContent = stats.completed;
+        document.getElementById("statPending").textContent = stats.pending;
+        document.getElementById("statUrgent").textContent = stats.by_priority.urgent;
+    } catch (error) {
+        console.error("Error loading statistics:", error);
+    }
+}
+
+/**
+ * Load All Tasks
  */
 async function loadTasks() {
+    const token = localStorage.getItem("token");
     try {
-        // Fetch tasks from the backend GET /tasks/ endpoint
-        const response = await fetch(`${API_URL}/`);
-        const tasks = await response.json();
-        
-        const taskList = document.getElementById("taskList");
-        if (!taskList) return;
-
-        taskList.innerHTML = ""; // Clear existing UI list before re-rendering
-
-        // Display a message if no tasks are found in the database
-        if (tasks.length === 0) {
-            taskList.innerHTML = "<li style='color: gray; border: none;'>No tasks found!</li>";
-            return;
-        }
-
-        // Loop through the tasks array and generate HTML for each task
-        tasks.forEach((task, index) => {
-            const li = document.createElement("li");
-            
-            // Set status badge and text styling based on task.is_completed status
-            const statusBadge = task.is_completed 
-                ? '<span class="status-done">✅ Done</span>' 
-                : '<span class="status-pending">⏳ Pending</span>';
-            
-            const titleClass = task.is_completed ? 'completed' : '';
-
-            li.innerHTML = `
-                <div class="task-info" style="display: flex; align-items: center;">
-                    <span class="task-number">#${index + 1}</span>
-                    
-                    <span class="${titleClass}">${task.title}</span> 
-                    
-                    ${statusBadge}
-                </div>
-                <div class="task-actions">
-                    <button class="status-btn" onclick="toggleTask(${task.id}, ${task.is_completed})">
-                        ${task.is_completed ? "Undo" : "Done"}
-                    </button>
-                    <button class="edit-btn" onclick="updateTask(${task.id}, '${task.title}')">Edit</button>
-                    <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
-                </div>
-            `;
-            taskList.appendChild(li);
+        const response = await fetch(`${API_URL}/tasks/`, {
+            headers: { "Authorization": `Bearer ${token}` }
         });
+
+        if (response.status === 401) return logout();
+
+        allTasks = await response.json();
+        renderTasks(allTasks);
+        loadStatistics();
     } catch (error) {
         console.error("Error loading tasks:", error);
     }
 }
 
 /**
- * 2. Add a new task to the database (CREATE)
+ * Create New Task
  */
 async function createTask() {
-    const input = document.getElementById("taskInput");
-    const title = input.value.trim();
+    const title = document.getElementById("taskInput").value.trim();
+    const priority = document.getElementById("taskPriority").value;
+    const category = document.getElementById("taskCategory").value.trim();
+    const dueDate = document.getElementById("taskDueDate").value;
+    const token = localStorage.getItem("token");
 
-    // Prevent submission if the input field is empty
-    if (!title) {
-        alert("Please write something!");
+    if (!title) return alert("Please enter a task title!");
+
+    const taskData = {
+        title: title,
+        priority: priority
+    };
+
+    if (category) taskData.category = category;
+    if (dueDate) taskData.due_date = dueDate;
+
+    try {
+        const response = await fetch(`${API_URL}/tasks/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(taskData)
+        });
+
+        if (response.ok) {
+            // Clear form
+            document.getElementById("taskInput").value = "";
+            document.getElementById("taskPriority").value = "medium";
+            document.getElementById("taskCategory").value = "";
+            document.getElementById("taskDueDate").value = "";
+
+            loadTasks();
+        } else {
+            const err = await response.json();
+            alert("Error: " + (err.detail || "Could not add task"));
+        }
+    } catch (error) {
+        console.error("Create Task Error:", error);
+    }
+}
+
+/**
+ * Toggle Task Completion Status
+ */
+async function toggleTaskStatus(id, currentStatus) {
+    const token = localStorage.getItem("token");
+    try {
+        await fetch(`${API_URL}/tasks/${id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ is_completed: !currentStatus })
+        });
+        loadTasks();
+    } catch (err) {
+        console.error("Toggle Error:", err);
+    }
+}
+
+/**
+ * Edit Task
+ */
+async function editTask(id, task) {
+    const newTitle = prompt("Update task title:", task.title);
+    if (!newTitle || newTitle === task.title) return;
+
+    const token = localStorage.getItem("token");
+    try {
+        await fetch(`${API_URL}/tasks/${id}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ title: newTitle })
+        });
+        loadTasks();
+    } catch (err) {
+        console.error("Edit Error:", err);
+    }
+}
+
+/**
+ * Delete Task
+ */
+async function deleteTask(id) {
+    const token = localStorage.getItem("token");
+    if (!confirm("Are you sure you want to delete this task?")) return;
+
+    try {
+        const response = await fetch(`${API_URL}/tasks/${id}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) loadTasks();
+    } catch (error) {
+        console.error("Delete Error:", error);
+    }
+}
+
+/**
+ * Filter Tasks
+ */
+function filterTasks(filter) {
+    currentFilter = filter;
+
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    let filteredTasks = allTasks;
+
+    switch (filter) {
+        case 'pending':
+            filteredTasks = allTasks.filter(task => !task.is_completed);
+            break;
+        case 'completed':
+            filteredTasks = allTasks.filter(task => task.is_completed);
+            break;
+        case 'urgent':
+            filteredTasks = allTasks.filter(task => task.priority === 'urgent');
+            break;
+        case 'high':
+            filteredTasks = allTasks.filter(task => task.priority === 'high');
+            break;
+    }
+
+    renderTasks(filteredTasks);
+}
+
+/**
+ * Format Date
+ */
+function formatDate(dateString) {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return `❗ Overdue`;
+    if (diffDays === 0) return `📅 Today`;
+    if (diffDays === 1) return `📅 Tomorrow`;
+    if (diffDays <= 7) return `📅 ${diffDays} days`;
+
+    return `📅 ${date.toLocaleDateString()}`;
+}
+
+/**
+ * Render Tasks (XSS-safe)
+ */
+function renderTasks(tasks) {
+    const taskList = document.getElementById("taskList");
+    taskList.innerHTML = "";
+
+    if (tasks.length === 0) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.className = "empty-state";
+        emptyDiv.innerHTML = `
+            <div class="empty-state-icon">📭</div>
+            <p>No tasks found. Create one to get started!</p>
+        `;
+        taskList.appendChild(emptyDiv);
         return;
     }
 
-    try {
-        const response = await fetch(`${API_URL}/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title }) 
-        });
+    tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.className = `task-item priority-${task.priority} ${task.is_completed ? 'completed' : ''}`;
 
-        if (response.ok) {
-            input.value = ""; // Reset input field on success
-            await loadTasks(); // Refresh list to show new task
-        } else {
-            const err = await response.json();
-            // Display specific validation error message from the backend
-            alert("Error: " + (err.detail || "Validation failed"));
+        // Create task main container
+        const taskMain = document.createElement("div");
+        taskMain.className = "task-main";
+
+        // Create task header
+        const taskHeader = document.createElement("div");
+        taskHeader.className = "task-header";
+
+        // Task title (XSS-safe using textContent)
+        const titleSpan = document.createElement("span");
+        titleSpan.className = "task-title";
+        titleSpan.textContent = task.title;  // Safe: textContent escapes HTML
+        taskHeader.appendChild(titleSpan);
+
+        // Priority badge
+        const priorityBadge = document.createElement("span");
+        priorityBadge.className = `task-badge badge-${task.priority}`;
+        priorityBadge.textContent = task.priority;
+        taskHeader.appendChild(priorityBadge);
+
+        // Category badge (if exists)
+        if (task.category) {
+            const categoryBadge = document.createElement("span");
+            categoryBadge.className = "task-badge badge-category";
+            categoryBadge.textContent = `📁 ${task.category}`;
+            taskHeader.appendChild(categoryBadge);
         }
-    } catch (error) {
-        console.error("Network error:", error);
-    }
+
+        taskMain.appendChild(taskHeader);
+
+        // Task meta information
+        const taskMeta = document.createElement("div");
+        taskMeta.className = "task-meta";
+
+        if (task.due_date) {
+            const dueSpan = document.createElement("span");
+            dueSpan.className = "task-meta-item";
+            dueSpan.textContent = formatDate(task.due_date);
+            taskMeta.appendChild(dueSpan);
+        }
+
+        const createdSpan = document.createElement("span");
+        createdSpan.className = "task-meta-item";
+        createdSpan.textContent = `🕒 Created ${new Date(task.created_at).toLocaleDateString()}`;
+        taskMeta.appendChild(createdSpan);
+
+        taskMain.appendChild(taskMeta);
+        li.appendChild(taskMain);
+
+        // Task actions
+        const taskActions = document.createElement("div");
+        taskActions.className = "task-actions";
+
+        // Complete/Undo button
+        const completeBtn = document.createElement("button");
+        completeBtn.className = `btn btn-sm ${task.is_completed ? 'btn-secondary' : 'btn-success'}`;
+        completeBtn.textContent = task.is_completed ? "↩️ Undo" : "✓ Done";
+        completeBtn.onclick = () => toggleTaskStatus(task.id, task.is_completed);
+        taskActions.appendChild(completeBtn);
+
+        // Edit button
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn btn-sm btn-edit";
+        editBtn.textContent = "✏️ Edit";
+        editBtn.onclick = () => editTask(task.id, task);
+        taskActions.appendChild(editBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "btn btn-sm btn-danger";
+        deleteBtn.textContent = "🗑️ Delete";
+        deleteBtn.onclick = () => deleteTask(task.id);
+        taskActions.appendChild(deleteBtn);
+
+        li.appendChild(taskActions);
+        taskList.appendChild(li);
+    });
 }
 
 /**
- * 3. Toggle task completion status (UPDATE - PATCH)
- * Switches is_completed between true and false
+ * Show Todo Section
  */
-async function toggleTask(id, currentStatus) {
-    try {
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ is_completed: !currentStatus }) 
-        });
-        
-        if (response.ok) {
-            await loadTasks(); // Refresh list to update UI
-        }
-    } catch (error) {
-        console.error("Failed to toggle task status:", error);
-    }
+function showTodoSection() {
+    document.getElementById("authContainer").style.display = "none";
+    document.getElementById("todoContainer").style.display = "block";
+    loadTasks();
 }
 
 /**
- * 4. Modify an existing task title (UPDATE - PATCH)
+ * Logout
  */
-async function updateTask(id, oldTitle) {
-    const newTitle = prompt("Update your task:", oldTitle);
-    
-    // Proceed only if the title is valid and actually changed
-    if (newTitle && newTitle.trim() !== "" && newTitle !== oldTitle) {
-        try {
-            const response = await fetch(`${API_URL}/${id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: newTitle.trim() }) 
-            });
-            
-            if (response.ok) {
-                await loadTasks(); // Refresh list
-            } else {
-                const err = await response.json();
-                alert("Error: " + (err.detail || "Update failed"));
-            }
-        } catch (error) {
-            console.error("Update failed:", error);
-        }
-    }
-}
-
-/**
- * 5. Remove a task from the database (DELETE)
- */
-async function deleteTask(id) {
-    if (confirm("Are you sure you want to delete this task?")) {
-        try {
-            const response = await fetch(`${API_URL}/${id}`, {
-                method: "DELETE"
-            });
-            if (response.ok) {
-                await loadTasks(); // Refresh list
-            }
-        } catch (error) {
-            console.error("Delete failed:", error);
-        }
-    }
+function logout() {
+    localStorage.removeItem("token");
+    location.reload();
 }

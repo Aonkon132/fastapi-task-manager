@@ -5,46 +5,59 @@ from pydantic import ValidationError
 from sqlmodel import Session, select
 from typing import List
 from contextlib import asynccontextmanager
+from datetime import datetime
 
-# Imports for handling frontend static files and directory mapping
+# Imports for handling frontend static files
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-# Custom file imports for database connection and data models
+# Custom file imports
 from .database import engine, create_db_and_tables, get_session
-from .models import Task
+from .models import Task, User
+from .auth import router as auth_router
 from .schemas import TaskCreate, TaskRead, TaskUpdate
+from .security import get_current_user
 
-# Define absolute paths for the static directory to ensure reliability
+# Define absolute paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-# Lifespan manager to handle startup and shutdown events
 @asynccontextmanager 
 async def lifespan(app: FastAPI):
-    # Initialize database tables when the application starts
     create_db_and_tables()
     yield
-    # Cleanup actions can be added here
     print("Cleaning up resources...")
 
 app = FastAPI(lifespan=lifespan)
 
-# Global Exception Handler for Pydantic ValidationErrors
-# This prevents the server from logging large tracebacks and returns a clean error to the user
+# CORS Configuration for Security
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:8000",  # Development
+        "http://localhost:8000",   # Development
+        # Add your production domain here:
+        # "https://yourdomain.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+app.include_router(auth_router)
+
 @app.exception_handler(ValidationError)
 async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):
-    # Extract the custom error message defined in the model validator
     error_msg = exc.errors()[0]['msg']
     return JSONResponse(
         status_code=422,
         content={"detail": error_msg},
     )
 
-# Mount the static files directory to serve CSS and JavaScript
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# Root Route: Serves the main index.html file to the browser
 @app.get("/")
 async def read_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
@@ -52,48 +65,107 @@ async def read_index():
         return {"error": "index.html not found"}
     return FileResponse(index_path)
 
-# --- CRUD Operations ---
+# --- PROTECTED CRUD Operations ---
 
-# CREATE: Add a new task to the database
+# CREATE: Automatically link the task to the current logged-in user
 @app.post("/tasks/", response_model=TaskRead)
-def create_task(task: TaskCreate, session: Session = Depends(get_session)):
-    # Validate the input task data against the Task model rules
-    db_task = Task.model_validate(task) 
+def create_task(
+    task_input: TaskCreate, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    db_task = Task(
+        title=task_input.title,
+        description=task_input.description,
+        priority=task_input.priority,
+        due_date=task_input.due_date,
+        category=task_input.category,
+        owner_id=current_user.id  # Links task to the user
+    )
     session.add(db_task)
     session.commit()
-    session.refresh(db_task) # Refresh to get the generated ID from the database
+    session.refresh(db_task)
     return db_task
 
-# READ: Fetch all tasks from the database
+# STATISTICS: Get task statistics for current user
+@app.get("/tasks/stats")
+def get_task_stats(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Returns statistics about the user's tasks."""
+    statement = select(Task).where(Task.owner_id == current_user.id)
+    tasks = session.exec(statement).all()
+    
+    total = len(tasks)
+    completed = sum(1 for task in tasks if task.is_completed)
+    pending = total - completed
+    
+    # Count by priority
+    priority_counts = {
+        "urgent": sum(1 for task in tasks if task.priority == "urgent"),
+        "high": sum(1 for task in tasks if task.priority == "high"),
+        "medium": sum(1 for task in tasks if task.priority == "medium"),
+        "low": sum(1 for task in tasks if task.priority == "low")
+    }
+    
+    return {
+        "total": total,
+        "completed": completed,
+        "pending": pending,
+        "by_priority": priority_counts
+    }
+
+# READ: Fixed to fetch only tasks belonging to the current user
 @app.get("/tasks/", response_model=List[TaskRead])
-def read_tasks(session: Session = Depends(get_session)):
-    tasks = session.exec(select(Task)).all()
+def read_tasks(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Filter tasks where owner_id matches current_user.id
+    statement = select(Task).where(Task.owner_id == current_user.id)
+    tasks = session.exec(statement).all()
     return tasks
 
-# DELETE: Remove a specific task using its unique ID
+# DELETE: Fixed to ensure a user can only delete their own tasks
 @app.delete("/tasks/{task_id}")
-def delete_task(task_id: int, session: Session = Depends(get_session)):
-    task = session.get(Task, task_id)
+def delete_task(
+    task_id: int, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Search for the task by ID and ensure it belongs to the current user
+    statement = select(Task).where(Task.id == task_id, Task.owner_id == current_user.id)
+    task = session.exec(statement).first()
+    
     if not task:
-        # Return 404 error if the task ID does not exist
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="Task not found or unauthorized access")
+    
     session.delete(task)
     session.commit()
     return {"ok": True}
 
-# UPDATE: Partially update task details using the PATCH method
+# UPDATE: Fixed to ensure a user can only update their own tasks
 @app.patch("/tasks/{task_id}", response_model=TaskRead)
-def update_task(task_id: int, task_data: TaskUpdate, session: Session = Depends(get_session)):
-    db_task = session.get(Task, task_id)
+def update_task(
+    task_id: int, 
+    task_data: TaskUpdate, 
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    # Ensure the task exists and belongs to the current user
+    statement = select(Task).where(Task.id == task_id, Task.owner_id == current_user.id)
+    db_task = session.exec(statement).first()
+    
     if not db_task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="Task not found or unauthorized access")
     
-    # Convert input data to dictionary, ignoring values that were not provided
     update_data = task_data.model_dump(exclude_unset=True)
-    
-    # Iterate and update each field dynamically
     for key, value in update_data.items():
         setattr(db_task, key, value)
+    
+    # Update the timestamp
+    db_task.updated_at = datetime.utcnow()
     
     session.add(db_task)
     session.commit()
