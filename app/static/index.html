@@ -69,6 +69,12 @@
                     <button onclick="toggleDarkMode()" class="btn btn-icon" id="themeToggle" title="Toggle Dark Mode">
                         <span class="theme-icon">🌙</span>
                     </button>
+                    <a href="/static/profile.html" class="btn btn-secondary" id="navProfileLink"
+                        style="text-decoration: none; margin-right: 0.5rem; display: flex; align-items: center; gap: 8px; padding: 8px 16px;">
+                        <img id="navProfileAvatar" src="" alt="Avatar"
+                            style="width: 32px; height: 32px; border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.3);">
+                        <span id="navProfileName">Profile</span>
+                    </a>
                     <button onclick="logout()" class="btn btn-secondary">Logout</button>
                 </div>
             </div>
@@ -157,6 +163,144 @@
                 <ul id="taskList" class="task-list">
                     <!-- Tasks will be rendered here -->
                 </ul>
+            </div>
+        </div>
+
+        <!-- ============ PROFILE SECTION ============ -->
+        <div id="profileContainer" style="display: none;">
+            <!-- Header (Reused or distinct for profile) -->
+            <div class="dashboard-header">
+                <div class="logo">
+                    <div class="logo-icon">✓</div>
+                    <h1>Your Profile</h1>
+                </div>
+                <div class="header-actions">
+                    <button onclick="toggleDarkMode()" class="btn btn-icon" title="Toggle Dark Mode">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    <button onclick="showTodoSection()" class="btn btn-secondary">
+                        ← Dashboard
+                    </button>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+
+            <!-- Profile Content Grid (Copied from profile.html) -->
+            <div class="profile-container" style="padding-top: 2rem;">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+                    <!-- Left Column: Profile Card -->
+                    <div class="col-span-12 lg:col-span-4">
+                        <div
+                            class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky transition-all hover:shadow-xl p-8">
+                            <div class="flex flex-col items-center text-center">
+                                <!-- Avatar -->
+                                <div class="relative inline-block w-32 mx-auto mb-4 group">
+                                    <div
+                                        class="profile-avatar-wrapper rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-200">
+                                        <img id="profileDisplayAvatar" src="" alt="Profile"
+                                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                    </div>
+                                    <!-- Camera Overlay -->
+                                    <div onclick="document.getElementById('avatarInput').click()"
+                                        class="avatar-overlay flex items-center justify-center">
+                                        <svg class="overlay-icon-svg text-white animate-bounce" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                            </path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <input type="file" id="avatarInput" class="hidden" accept="image/png, image/jpeg"
+                                        onchange="uploadAvatar(this)">
+                                </div>
+
+                                <!-- Name & Title -->
+                                <h1 id="displayName" class="text-2xl font-bold text-gray-900 mb-1">Loading...</h1>
+                                <p id="displayTitle" class="text-blue-600 font-medium mb-4">Software Engineer</p>
+
+                                <!-- Contact Info -->
+                                <div class="flex flex-col gap-2 mb-6 w-full items-center">
+                                    <div id="emailDisplay"
+                                        class="flex items-center justify-center gap-2 text-gray-600 text-sm">
+                                        <span>email@example.com</span>
+                                    </div>
+                                    <div id="websiteDisplay"
+                                        class="flex items-center justify-center gap-2 text-gray-600 text-sm hidden">
+                                        <a href="#" target="_blank"
+                                            class="text-blue-600 hover:underline truncate">website.com</a>
+                                    </div>
+                                </div>
+
+                                <!-- Bio -->
+                                <div id="bioSection" class="bg-gray-50 rounded-xl p-4 w-full hidden">
+                                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">About
+                                    </h3>
+                                    <p id="displayBio" class="text-gray-700 text-sm leading-relaxed"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Settings Form -->
+                    <div class="col-span-12 lg:col-span-8">
+                        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                            <div class="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-gray-900">Profile Settings</h2>
+                                    <p class="text-gray-500 text-sm mt-1">Manage your personal information</p>
+                                </div>
+                            </div>
+
+                            <form id="profileForm" onsubmit="updateProfile(event)">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" id="fullNameInput" class="form-input"
+                                            placeholder="e.g. John Doe">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Job Title</label>
+                                        <input type="text" id="jobTitleInput" class="form-input"
+                                            placeholder="e.g. Product Manager">
+                                    </div>
+                                </div>
+
+                                <div class="mb-6">
+                                    <label class="form-label">Bio</label>
+                                    <textarea id="bioInput" rows="4" class="form-input"
+                                        placeholder="Tell us a little about yourself..."></textarea>
+                                </div>
+
+                                <div class="mb-8">
+                                    <label
+                                        class="form-label block text-left mb-2 text-sm font-semibold text-gray-700">Website
+                                        URL</label>
+                                    <div class="relative">
+                                        <div
+                                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 sm:text-sm"
+                                                style="margin: 5px;padding-top: 3px;">https://</span>
+                                        </div>
+                                        <input type="url" id="websiteInput"
+                                            class="form-input w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            style="padding-left: 4rem;" placeholder="yourwebsite.com">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end pt-6 border-t border-gray-100">
+                                    <button type="submit" style="background-color: skyblue;padding: 10px;color: black;"
+                                        class="font-medium py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity focus:ring-4 focus:ring-gray-200">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>

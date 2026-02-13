@@ -12,16 +12,61 @@ let currentFilter = 'all';
  * Initialize Application
  */
 document.addEventListener("DOMContentLoaded", () => {
+
+
+    // Enforce Clean URL: Remove 'index.html' or '/static/' from address bar
+    if (window.location.pathname.includes('index.html') || window.location.pathname.includes('/static/')) {
+        window.history.replaceState({}, '', '/');
+    }
+
     const token = localStorage.getItem("token");
     if (token) {
         showTodoSection();
+
+        // Handle deep linking / redirects
+        const navTarget = sessionStorage.getItem('navigateTo');
+        if (navTarget === 'profile') {
+            sessionStorage.removeItem('navigateTo');
+            showProfileSection();
+        }
     }
 
     // Load theme preference
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     updateThemeIcon();
+
+    // Start idle timer
+    startIdleTimer();
 });
+
+/**
+ * Idle Timer for Auto Logout
+ */
+let idleTimer;
+const IDLE_TIMEOUT = 60 * 1000; // 1 minute in milliseconds
+
+function startIdleTimer() {
+    // Reset timer on any activity
+    window.onload = resetTimer;
+    window.onmousemove = resetTimer;
+    window.onmousedown = resetTimer;
+    window.ontouchstart = resetTimer;
+    window.onclick = resetTimer;
+    window.onkeypress = resetTimer;
+    window.addEventListener('scroll', resetTimer, true);
+
+    // Initial start
+    resetTimer();
+}
+
+function resetTimer() {
+    clearTimeout(idleTimer);
+    // Only set timer if user is logged in
+    if (localStorage.getItem("token")) {
+        idleTimer = setTimeout(logout, IDLE_TIMEOUT);
+    }
+}
 
 /**
  * Dark Mode Toggle
@@ -300,6 +345,40 @@ async function loadStatistics() {
         document.getElementById("statUrgent").textContent = stats.by_priority.urgent;
     } catch (error) {
         console.error("Error loading statistics:", error);
+    }
+}
+
+/**
+ * Load User Profile for Navigation
+ */
+async function loadUserProfile() {
+    const token = localStorage.getItem("token");
+    try {
+        const response = await fetch(`${API_URL}/users/me`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+
+            // Update Name
+            const nameEl = document.getElementById("navProfileName");
+            if (nameEl) nameEl.textContent = user.full_name || user.username;
+
+            // Update Avatar
+            const avatarEl = document.getElementById("navProfileAvatar");
+            if (avatarEl) {
+                if (user.profile_image) {
+                    avatarEl.src = user.profile_image;
+                    // Add cache buster if needed, or rely on distinct URLs
+                } else {
+                    avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=random`;
+                }
+                avatarEl.style.display = "block";
+            }
+        }
+    } catch (error) {
+        console.error("Error loading profile:", error);
     }
 }
 
@@ -586,16 +665,193 @@ function renderTasks(tasks) {
 /**
  * Show Todo Section
  */
-function showTodoSection() {
+async function showTodoSection() {
     document.getElementById("authContainer").style.display = "none";
+    document.getElementById("profileContainer").style.display = "none";
     document.getElementById("todoContainer").style.display = "block";
     loadTasks();
+    loadUserProfile();
 }
+
+/**
+ * Show Profile Section (SPA)
+ */
+async function showProfileSection() {
+    document.getElementById("todoContainer").style.display = "none";
+    document.getElementById("authContainer").style.display = "none"; // Safety
+    document.getElementById("profileContainer").style.display = "block";
+    await fetchProfile();
+}
+
+/**
+ * Profile: Fetch Data
+ */
+async function fetchProfile() {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_URL}/users/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            renderProfileDisplay(user);
+            populateProfileForm(user);
+        } else if (response.status === 401) {
+            logout();
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+}
+
+/**
+ * Profile: Render Display Card
+ */
+function renderProfileDisplay(user) {
+    // Basic Info
+    const displayAvatar = document.getElementById('profileDisplayAvatar'); // Distinguished ID
+    const displayName = document.getElementById('displayName');
+    const displayTitle = document.getElementById('displayTitle');
+
+    if (displayName) displayName.textContent = user.full_name || user.username;
+    if (displayTitle) displayTitle.textContent = user.job_title || 'No title set';
+
+    // Email
+    const emailSpan = document.getElementById('emailDisplay')?.querySelector('span');
+    if (emailSpan) emailSpan.textContent = user.email;
+
+    // Avatar
+    if (displayAvatar) {
+        if (user.profile_image) {
+            displayAvatar.src = user.profile_image;
+        } else {
+            displayAvatar.src = `https://ui-avatars.com/api/?name=${user.username}&background=random`;
+        }
+    }
+
+    // Website
+    const websiteEl = document.getElementById('websiteDisplay');
+    if (websiteEl) {
+        if (user.website) {
+            websiteEl.classList.remove('hidden');
+            websiteEl.classList.add('flex');
+            websiteEl.querySelector('a').href = user.website;
+            websiteEl.querySelector('a').textContent = user.website.replace(/^https?:\/\//, '');
+        } else {
+            websiteEl.classList.add('hidden');
+            websiteEl.classList.remove('flex');
+        }
+    }
+
+    // Bio
+    const bioSection = document.getElementById('bioSection');
+    const bioDisplay = document.getElementById('displayBio');
+    if (bioSection && bioDisplay) {
+        if (user.bio) {
+            bioSection.classList.remove('hidden');
+            bioDisplay.textContent = user.bio;
+        } else {
+            bioSection.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * Profile: Populate Form
+ */
+function populateProfileForm(user) {
+    document.getElementById('fullNameInput').value = user.full_name || '';
+    document.getElementById('jobTitleInput').value = user.job_title || '';
+    document.getElementById('bioInput').value = user.bio || '';
+    document.getElementById('websiteInput').value = user.website ? user.website.replace(/^https?:\/\//, '') : '';
+}
+
+/**
+ * Profile: Update
+ */
+async function updateProfile(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('token');
+
+    let website = document.getElementById('websiteInput').value;
+    if (website && !website.startsWith('http')) {
+        website = 'https://' + website;
+    }
+
+    const data = {
+        full_name: document.getElementById('fullNameInput').value,
+        job_title: document.getElementById('jobTitleInput').value,
+        bio: document.getElementById('bioInput').value,
+        website: website
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/users/me`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const updatedUser = await response.json();
+            renderProfileDisplay(updatedUser);
+
+            // Also update the nav bar logic since user might have changed name/avatar
+            loadUserProfile();
+
+            // Button feedback
+            const btn = event.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Saved!';
+            btn.style.backgroundColor = 'green'; // Simple inline feedback
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.backgroundColor = 'skyblue'; // Revert to skyblue
+            }, 2000);
+        } else {
+            alert('Failed to update profile.');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+    }
+}
+
+/**
+ * Profile: Upload Avatar
+ */
+async function uploadAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    const token = localStorage.getItem('token');
+
+    try {
+        const response = await fetch(`${API_URL}/users/me/avatar`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (response.ok) {
+            const updatedUser = await response.json();
+            renderProfileDisplay(updatedUser);
+            // Refresh nav bar avatar too
+            loadUserProfile();
+        } else {
+            alert('Failed to upload image.');
+        }
+    } catch (error) {
+        console.error('Error uploading avatar:', error);
+    }
+}
+
 
 /**
  * Logout
  */
 function logout() {
     localStorage.removeItem("token");
-    location.reload();
+    window.location.href = "/";
 }

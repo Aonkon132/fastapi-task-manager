@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - TaskFlow</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="logo">
+                <div class="logo-icon">✓</div>
+                <h1>Your Profile</h1>
+            </div>
+            <div class="header-actions">
+                <button onclick="toggleDarkMode()" class="btn btn-icon" title="Toggle Dark Mode">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <a href="/static/index.html" class="btn btn-secondary" style="text-decoration: none;">
+                    ← Dashboard
+                </a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
+        <!-- Profile Content Grid -->
+        <div class="profile-container" style="padding-top: 2rem;">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+                <!-- Left Column: Profile Card -->
+                <div class="col-span-12 lg:col-span-4">
+                    <div
+                        class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky transition-all hover:shadow-xl p-8">
+                        <div class="flex flex-col items-center text-center">
+                            <!-- Avatar -->
+                            <div class="relative inline-block w-32 mx-auto mb-4 group">
+                                <div
+                                    class="profile-avatar-wrapper rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-200">
+                                    <img id="profileDisplayAvatar" src="" alt="Profile"
+                                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                </div>
+                                <!-- Camera Overlay -->
+                                <div onclick="document.getElementById('avatarInput').click()"
+                                    class="avatar-overlay flex items-center justify-center">
+                                    <svg class="overlay-icon-svg text-white animate-bounce" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                        </path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <input type="file" id="avatarInput" class="hidden" accept="image/png, image/jpeg"
+                                    onchange="uploadAvatar(this)">
+                            </div>
+
+                            <!-- Name & Title -->
+                            <h1 id="displayName" class="text-2xl font-bold text-gray-900 mb-1">Loading...</h1>
+                            <p id="displayTitle" class="text-blue-600 font-medium mb-4">Software Engineer</p>
+
+                            <!-- Contact Info -->
+                            <div class="flex flex-col gap-2 mb-6 w-full items-center">
+                                <div id="emailDisplay"
+                                    class="flex items-center justify-center gap-2 text-gray-600 text-sm">
+                                    <span>email@example.com</span>
+                                </div>
+                                <div id="websiteDisplay"
+                                    class="flex items-center justify-center gap-2 text-gray-600 text-sm hidden">
+                                    <a href="#" target="_blank"
+                                        class="text-blue-600 hover:underline truncate">website.com</a>
+                                </div>
+                            </div>
+
+                            <!-- Bio -->
+                            <div id="bioSection" class="bg-gray-50 rounded-xl p-4 w-full hidden">
+                                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">About
+                                </h3>
+                                <p id="displayBio" class="text-gray-700 text-sm leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Settings Form -->
+                <div class="col-span-12 lg:col-span-8">
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                        <div class="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Profile Settings</h2>
+                                <p class="text-gray-500 text-sm mt-1">Manage your personal information</p>
+                            </div>
+                        </div>
+
+                        <form id="profileForm" onsubmit="updateProfile(event)">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" id="fullNameInput" class="form-input"
+                                        placeholder="e.g. John Doe">
+                                </div>
+                                <div>
+                                    <label class="form-label">Job Title</label>
+                                    <input type="text" id="jobTitleInput" class="form-input"
+                                        placeholder="e.g. Product Manager">
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="form-label">Bio</label>
+                                <textarea id="bioInput" rows="4" class="form-input"
+                                    placeholder="Tell us a little about yourself..."></textarea>
+                            </div>
+
+                            <div class="mb-8">
+                                <label
+                                    class="form-label block text-left mb-2 text-sm font-semibold text-gray-700">Website
+                                    URL</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm"
+                                            style="margin: 5px;padding-top: 3px;">https://</span>
+                                    </div>
+                                    <input type="url" id="websiteInput"
+                                        class="form-input w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        style="padding-left: 4rem;" placeholder="yourwebsite.com">
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end pt-6 border-t border-gray-100">
+                                <button type="submit" style="background-color: skyblue;padding: 10px;color: black;"
+                                    class="font-medium py-2.5 px-6 rounded-lg hover:opacity-90 transition-opacity focus:ring-4 focus:ring-gray-200">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+
+        // Initialize on page load
+        document.addEventListener("DOMContentLoaded", () => {
+            // Check if user is logged in
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/static/index.html";
+                return;
+            }
+
+            // Load theme preference
+            const savedTheme = localStorage.getItem("theme") || "light";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+            updateThemeIcon();
+
+            // Load profile data
+            fetchProfile();
+        });
+
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute("data-theme");
+            const newTheme = currentTheme === "light" ? "dark" : "light";
+            html.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const themeIcon = document.querySelector(".theme-icon");
+            const currentTheme = document.documentElement.getAttribute("data-theme");
+            if (themeIcon) {
+                themeIcon.textContent = currentTheme === "light" ? "🌙" : "☀️";
+            }
+        }
+
+        // Fetch Profile Data
+        async function fetchProfile() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    renderProfileDisplay(user);
+                    populateProfileForm(user);
+                } else if (response.status === 401) {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            }
+        }
+
+        // Render Profile Display
+        function renderProfileDisplay(user) {
+            const displayAvatar = document.getElementById('profileDisplayAvatar');
+            const displayName = document.getElementById('displayName');
+            const displayTitle = document.getElementById('displayTitle');
+
+            if (displayName) displayName.textContent = user.full_name || user.username;
+            if (displayTitle) displayTitle.textContent = user.job_title || 'No title set';
+
+            // Email
+            const emailSpan = document.getElementById('emailDisplay')?.querySelector('span');
+            if (emailSpan) emailSpan.textContent = user.email;
+
+            // Avatar
+            if (displayAvatar) {
+                if (user.profile_image) {
+                    displayAvatar.src = user.profile_image;
+                } else {
+                    displayAvatar.src = `https://ui-avatars.com/api/?name=${user.username}&background=random`;
+                }
+            }
+
+            // Website
+            const websiteEl = document.getElementById('websiteDisplay');
+            if (websiteEl) {
+                if (user.website) {
+                    websiteEl.classList.remove('hidden');
+                    websiteEl.classList.add('flex');
+                    websiteEl.querySelector('a').href = user.website;
+                    websiteEl.querySelector('a').textContent = user.website.replace(/^https?:\/\//, '');
+                } else {
+                    websiteEl.classList.add('hidden');
+                    websiteEl.classList.remove('flex');
+                }
+            }
+
+            // Bio
+            const bioSection = document.getElementById('bioSection');
+            const bioDisplay = document.getElementById('displayBio');
+            if (bioSection && bioDisplay) {
+                if (user.bio) {
+                    bioSection.classList.remove('hidden');
+                    bioDisplay.textContent = user.bio;
+                } else {
+                    bioSection.classList.add('hidden');
+                }
+            }
+        }
+
+        // Populate Profile Form
+        function populateProfileForm(user) {
+            document.getElementById('fullNameInput').value = user.full_name || '';
+            document.getElementById('jobTitleInput').value = user.job_title || '';
+            document.getElementById('bioInput').value = user.bio || '';
+            document.getElementById('websiteInput').value = user.website ? user.website.replace(/^https?:\/\//, '') : '';
+        }
+
+        // Update Profile
+        async function updateProfile(event) {
+            event.preventDefault();
+            const token = localStorage.getItem('token');
+
+            let website = document.getElementById('websiteInput').value;
+            if (website && !website.startsWith('http')) {
+                website = 'https://' + website;
+            }
+
+            const data = {
+                full_name: document.getElementById('fullNameInput').value,
+                job_title: document.getElementById('jobTitleInput').value,
+                bio: document.getElementById('bioInput').value,
+                website: website
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/users/me`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    renderProfileDisplay(updatedUser);
+
+                    // Button feedback
+                    const btn = event.target.querySelector('button[type="submit"]');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✓ Saved!';
+                    btn.style.backgroundColor = 'green';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.backgroundColor = 'skyblue';
+                    }, 2000);
+                } else {
+                    alert('Failed to update profile.');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+            }
+        }
+
+        // Upload Avatar
+        async function uploadAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            const token = localStorage.getItem('token');
+
+            try {
+                const response = await fetch(`${API_URL}/users/me/avatar`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    renderProfileDisplay(updatedUser);
+                } else {
+                    alert('Failed to upload image.');
+                }
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "/static/index.html";
+        }
+    </script>
+</body>
+
+</html>

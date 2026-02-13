@@ -50,10 +50,23 @@ class TaskUpdate(BaseModel):
 
 # This schema is used for returning user information.
 # We never include the password/hashed_password here for security.
+# This schema is used for returning user information.
 class UserRead(BaseModel):
     id: int
     username: str
     email: EmailStr
+    full_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    profile_image: Optional[str] = None
+    website: Optional[str] = None
+
+# This is used for updating user profile information.
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    job_title: Optional[str] = None
+    bio: Optional[str] = None
+    website: Optional[str] = None
 
 # This is used for receiving user data during registration.
 class UserCreate(BaseModel):

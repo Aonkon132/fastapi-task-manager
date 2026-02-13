@@ -15,8 +15,15 @@ from fastapi.responses import FileResponse
 from .database import engine, create_db_and_tables, get_session
 from .models import Task, User
 from .auth import router as auth_router
+from .routers import users as users_router
 from .schemas import TaskCreate, TaskRead, TaskUpdate
 from .security import get_current_user
+
+# Rate Limiting
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 # Define absolute paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +36,12 @@ async def lifespan(app: FastAPI):
     print("Cleaning up resources...")
 
 app = FastAPI(lifespan=lifespan)
+
+# Initialize Rate Limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS Configuration for Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,7 +59,19 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://ui-avatars.com"
+    return response
+
 app.include_router(auth_router)
+app.include_router(users_router.router)
 
 @app.exception_handler(ValidationError)
 async def pydantic_validation_exception_handler(request: Request, exc: ValidationError):

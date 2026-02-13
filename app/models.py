@@ -23,6 +23,13 @@ class User(SQLModel, table=True):
     email: EmailStr = Field(unique=True)
     hashed_password: str
     
+    # Profile Fields
+    full_name: Optional[str] = Field(default=None)
+    job_title: Optional[str] = Field(default=None)
+    bio: Optional[str] = Field(default=None)
+    profile_image: Optional[str] = Field(default=None) # URL to the image
+    website: Optional[str] = Field(default=None)
+    
     # Relationship: Connects tasks to this user
     # 'back_populates' creates a link to the 'owner' field in Task model
     tasks: List["Task"] = Relationship(back_populates="owner")

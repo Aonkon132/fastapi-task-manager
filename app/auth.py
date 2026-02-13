@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from .database import get_session
 from .schemas import UserCreate
@@ -6,6 +6,11 @@ from .models import User
 from .security import hash_password
 from fastapi.security import OAuth2PasswordRequestForm
 from .security import verify_password, create_access_token
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# Initialize limiter for auth routes
+limiter = Limiter(key_func=get_remote_address)
 
 # Create a router for authentication
 router = APIRouter(
@@ -14,7 +19,8 @@ router = APIRouter(
 )
 
 @router.post("/register/")
-def register_user(user_input: UserCreate, session: Session = Depends(get_session)):
+@limiter.limit("3/minute")
+def register_user(request: Request, user_input: UserCreate, session: Session = Depends(get_session)):
     """
     Handles new user registration using a Schema (UserCreate).
     """
@@ -54,7 +60,9 @@ def register_user(user_input: UserCreate, session: Session = Depends(get_session
 
 # LOGIN ENDPOINT
 @router.post("/token")
+@limiter.limit("5/minute")
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(), 
     session: Session = Depends(get_session)
 ):

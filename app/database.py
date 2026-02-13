@@ -1,11 +1,15 @@
 from sqlmodel import create_engine, SQLModel, Session
 from fastapi import Depends
+import os
 
-# The name of the SQLite database file
-sqlite_file_name = "database.db"
+# Get the base directory (project root)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # The connection URL that tells SQLModel where and how to connect to the database
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+# Using /tmp directory to bypass macOS permission issues in the project folder
+sqlite_file_name = "task_manager.db"
+import tempfile
+sqlite_url = f"sqlite:///{os.path.join(tempfile.gettempdir(), sqlite_file_name)}"
 
 # The engine is the "bridge" that handles the communication between Python and SQLite
 # check_same_thread: False is required for SQLite to work with FastAPI's asynchronous nature
