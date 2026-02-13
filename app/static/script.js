@@ -3,7 +3,8 @@
  * Enhanced JavaScript with Dark Mode, Statistics, Filters, and Priority Management
  */
 
-const API_URL = "http://127.0.0.1:8000";
+// Automatically detect the API URL (works on localhost and production)
+const API_URL = window.location.origin;
 let isLoginMode = true;
 let allTasks = [];
 let currentFilter = 'all';

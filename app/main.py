@@ -48,12 +48,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:8000",  # Development
-        "http://localhost:8000",   # Development
-        # Add your production domain here:
-        # "https://yourdomain.com"
-    ],
+    allow_origins=["*"],  # Allow all origins (can restrict later for production)
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
