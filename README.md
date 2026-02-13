@@ -2,15 +2,24 @@
 
 <div align="center">
 
-![TaskFlow Logo](https://img.shields.io/badge/TaskFlow-Task%20Manager-purple?style=for-the-badge)
+![TaskFlow Logo](https://img.shields.io/badge/TaskFlow-Task%20Manager-purple?style=for-the-badge&logo=appveyor)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**A beautiful, modern task management application with priority levels, categories, and dark mode support**
+**A beautiful, modern task management application with priority levels, categories, and dark mode support.**
 
-[Features](#-features) • [Demo](#-demo) • [Installation](#-installation) • [Usage](#-usage) • [Security](#-security) • [API Docs](#-api-documentation)
+[Features](#-features) • [Screenshots](#-screenshots) • [Installation](#-installation) • [Usage](#-usage) • [API Docs](#-api-documentation)
 
+</div>
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+  <img src="app/static/uploads/screenshot_placeholder.png" alt="TaskFlow Dashboard" width="800"/>
 </div>
 
 ---
@@ -397,12 +406,9 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📞 Support
+## 📄 License
 
-If you have any questions or issues, please:
-1. Check existing [Issues](https://github.com/Aonkon132/fastapi-task-manager/issues)
-2. Create a new issue with detailed description
-3. Contact via email: aonkonmallick132@gmail.com
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
