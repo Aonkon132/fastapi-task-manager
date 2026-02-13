@@ -20,9 +20,14 @@ from .models import User
 
 # --- CONFIGURATION ---
 # Load from environment variables (NEVER hardcode secrets!)
+# Load from environment variables
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+# Fallback if not set (Prevents crash on deployment, but logs warning)
 if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable must be set in .env file")
+    import secrets
+    print("WARNING: SECRET_KEY not found in env. Using temporary generated key.")
+    SECRET_KEY = secrets.token_hex(32)
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
