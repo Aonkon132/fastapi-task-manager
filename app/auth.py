@@ -25,8 +25,11 @@ def register_user(request: Request, user_input: UserCreate, session: Session = D
     Handles new user registration using a Schema (UserCreate).
     """
     
-    # 1. Check if the username already exists
-    statement_username = select(User).where(User.username == user_input.username)
+    # Convert username to lowercase for case-insensitive authentication
+    username_lower = user_input.username.lower()
+    
+    # 1. Check if the username already exists (case-insensitive)
+    statement_username = select(User).where(User.username == username_lower)
     if session.exec(statement_username).first():
         raise HTTPException(
             status_code=400, 
@@ -43,8 +46,9 @@ def register_user(request: Request, user_input: UserCreate, session: Session = D
 
     # 2. Convert input data into the database model (User)
     # The plain password from user_input is hashed before saving for security
+    # Username is stored in lowercase
     new_user = User(
-        username=user_input.username,
+        username=username_lower,
         email=user_input.email,
         hashed_password=hash_password(user_input.password) 
     )
@@ -69,8 +73,10 @@ async def login_for_access_token(
     """
     Verifies user credentials and returns a JWT access token.
     """
-    # 1. Look for the user in the database
-    user = session.exec(select(User).where(User.username == form_data.username)).first()
+    # 1. Look for the user in the database (case-insensitive)
+    # Convert username to lowercase to match stored format
+    username_lower = form_data.username.lower()
+    user = session.exec(select(User).where(User.username == username_lower)).first()
     
     # 2. Verify password
     if not user or not verify_password(form_data.password, user.hashed_password):

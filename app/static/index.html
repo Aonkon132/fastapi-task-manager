@@ -25,6 +25,9 @@
             </div>
 
             <form onsubmit="event.preventDefault(); handleAuthAction();" class="auth-form">
+                <div id="auth-error" class="error-message"
+                    style="margin-bottom: 1rem; text-align: center; color: red; font-weight: bold; min-height: 20px;">
+                </div>
                 <div class="input-wrapper">
                     <label for="username">Username</label>
                     <input type="text" id="username" placeholder="Enter your username" required>
@@ -305,7 +308,7 @@
         </div>
     </div>
 
-    <script src="/static/script.js"></script>
+    <script src="/static/script.js?v=2"></script>
 </body>
 
 </html>

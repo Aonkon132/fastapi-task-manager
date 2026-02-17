@@ -111,6 +111,8 @@ function toggleAuthMode(forceMode = null) {
     document.getElementById("username").value = "";
     document.getElementById("email").value = "";
     document.getElementById("password").value = "";
+    const authError = document.getElementById('auth-error');
+    if (authError) authError.textContent = "";
 
     if (isLoginMode) {
         title.innerText = "Welcome to TaskFlow";
@@ -287,6 +289,8 @@ async function login() {
 
     // Reset errors
     document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    const authError = document.getElementById('auth-error');
+    if (authError) authError.textContent = "";
     document.querySelectorAll('.input-wrapper').forEach(el => el.classList.remove('error'));
 
     let hasError = false;
@@ -317,9 +321,10 @@ async function login() {
         showTodoSection();
     } else {
         const data = await response.json();
-        // Show error under password field for 401
+        // Show error at the top for 401
         if (response.status === 401) {
-            showError('password', 'Incorrect username or password');
+            const authError = document.getElementById('auth-error');
+            if (authError) authError.textContent = 'Incorrect username or password';
         } else {
             showError('password', data.detail || "Login failed");
         }
